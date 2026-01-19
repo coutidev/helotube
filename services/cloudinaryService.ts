@@ -1,7 +1,6 @@
 
 /**
  * Serviço para lidar com uploads diretamente para o Cloudinary.
- * Para usar, configure um "Unsigned Upload Preset" no painel do Cloudinary.
  */
 
 export interface CloudinaryUploadResponse {
@@ -21,11 +20,15 @@ export const uploadVideoToCloudinary = async (
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', uploadPreset);
-  formData.append('resource_type', 'video');
+  // Usar resource_type 'auto' às vezes ajuda em erros de rede dependendo da extensão do arquivo
+  formData.append('resource_type', 'auto'); 
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`);
+    // Endpoint de upload para Cloudinary
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+    
+    xhr.open('POST', url);
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
@@ -35,14 +38,23 @@ export const uploadVideoToCloudinary = async (
     };
 
     xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(JSON.parse(xhr.responseText));
-      } else {
-        reject(new Error('Falha no upload para o Cloudinary'));
+      try {
+        const response = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(response);
+        } else {
+          const errorMsg = response.error?.message || 'Falha no upload';
+          reject(new Error(errorMsg));
+        }
+      } catch (e) {
+        reject(new Error('Servidor retornou uma resposta inválida.'));
       }
     };
 
-    xhr.onerror = () => reject(new Error('Erro de rede no Cloudinary'));
+    xhr.onerror = () => {
+      reject(new Error('Erro de Rede. Verifique sua internet, se o Cloud Name está correto ou se há um bloqueador de anúncios impedindo o envio.'));
+    };
+
     xhr.send(formData);
   });
 };
@@ -54,6 +66,9 @@ export const checkIsVertical = (file: File): Promise<boolean> => {
     video.onloadedmetadata = () => {
       window.URL.revokeObjectURL(video.src);
       resolve(video.videoHeight > video.videoWidth);
+    };
+    video.onerror = () => {
+      resolve(false);
     };
     video.src = URL.createObjectURL(file);
   });
