@@ -1,0 +1,8 @@
+{
+  "name": "HeloTube",
+  "description": "Uma plataforma de compartilhamento de vídeos inspirada no YouTube, personalizada para a Helo, com suporte a vídeos verticais e recomendações inteligentes.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
