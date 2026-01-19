@@ -1,36 +1,40 @@
 
 # 🚀 HeloTube - YouTube Clone 4K
 
-Bem-vindo ao **HeloTube**, a plataforma de vídeos inspirada no YouTube, personalizada para a Helo!
+Plataforma de compartilhamento de vídeos inspirada no YouTube, personalizada para a **Helo**.
 
-## 🛠️ Como colocar no ar (Deploy)
+## 🔗 Seu Repositório
+`https://github.com/coutidev/helotube`
 
-1. **GitHub**:
-   - Crie um novo repositório no GitHub.
-   - Use os comandos:
-     ```bash
-     git init
-     git add .
-     git commit -m "feat: HeloTube 4K"
-     git remote add origin SUA_URL_AQUI
-     git push -u origin main
-     ```
+## 🛠️ Como enviar seu código para o GitHub (Git Push)
 
-2. **Vercel**:
-   - Conecte sua conta do GitHub na Vercel.
-   - Importe este projeto.
-   - Em **Environment Variables**, adicione sua `API_KEY` do Gemini.
-   - Clique em **Deploy**.
+Abra o terminal na pasta do projeto e digite:
 
-## ☁️ Configuração Cloudinary
+```bash
+# 1. Inicializar o repositório local
+git init
 
-Para que os uploads funcionem:
-1. Crie conta no Cloudinary.
-2. Configure um **Unsigned Upload Preset**.
-3. No arquivo `App.tsx`, substitua `seu_cloud_name` e `seu_upload_preset` pelos seus dados.
+# 2. Adicionar todos os arquivos
+git add .
 
-## 📱 Vídeos em Pé (Shorts)
-O site detecta automaticamente se o vídeo foi gravado na vertical e o envia para a seção de **Shorts**.
+# 3. Criar a primeira versão (commit)
+git commit -m "Lançamento do HeloTube v1.0 (Sem IA)"
+
+# 4. Conectar ao seu link do GitHub
+git remote add origin https://github.com/coutidev/helotube.git
+
+# 5. Definir a branch principal como main
+git branch -M main
+
+# 6. ENVIAR!
+git push -u origin main
+```
+
+## 🌐 Deploy na Vercel
+Para deixar o site online:
+1. Conecte sua conta do GitHub na [Vercel](https://vercel.com).
+2. Importe o projeto `helotube`.
+3. Pronto! O projeto não requer chaves de API.
 
 ---
-*Desenvolvido com carinho para a Helo.*
+*Desenvolvido com ❤️ para Helo.*
