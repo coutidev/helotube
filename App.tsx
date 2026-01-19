@@ -8,7 +8,7 @@ import { Video } from './types';
 import { uploadVideoToCloudinary, checkIsVertical } from './services/cloudinaryService';
 
 // ============================================================
-// ✅ CONFIGURAÇÃO ATUALIZADA - MODO ETERNO ATIVADO
+// ✅ CONFIGURAÇÃO - MODO ETERNO ATIVADO
 // ============================================================
 const CLOUDINARY_CLOUD_NAME: string = 'dxhqim1nl'; 
 const CLOUDINARY_UPLOAD_PRESET: string = 'k5p9p5ui';
@@ -18,9 +18,9 @@ const MICKEY_AVATAR = 'https://upload.wikimedia.org/wikipedia/en/d/d4/Mickey_Mou
 
 const INITIAL_VIDEOS: Video[] = [
   {
-    id: '1',
+    id: 'demo-1',
     title: 'VLOG COM SAUDADE DO MOR #01',
-    thumbnail: 'https://images.unsplash.com/photo-1518197146369-0115994ca759?q=80&w=400&h=711&auto=format&fit=crop',
+    thumbnail: 'https://images.unsplash.com/photo-1516715094483-75da7dee9758?q=80&w=600&auto=format&fit=crop',
     channelName: 'nicolas couti thibes',
     channelAvatar: MICKEY_AVATAR,
     views: '1.5k visualizações',
@@ -34,7 +34,7 @@ const INITIAL_VIDEOS: Video[] = [
 const CATEGORIES = ["Tudo", "Shorts", "Música", "Mixes", "Ao vivo", "Gaming", "Notícias"];
 
 const App: React.FC = () => {
-  const [videos, setVideos] = useState<Video[]>(INITIAL_VIDEOS);
+  const [videos, setVideos] = useState<Video[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -45,25 +45,44 @@ const App: React.FC = () => {
   const isCloudinaryConfigured = CLOUDINARY_CLOUD_NAME !== 'seu_cloud_name' && CLOUDINARY_UPLOAD_PRESET !== 'seu_upload_preset';
 
   useEffect(() => {
+    // 1. Carregar vídeos salvos no navegador do Nicolas
+    const saved = localStorage.getItem('helotube_videos');
+    let baseVideos = saved ? JSON.parse(saved) : INITIAL_VIDEOS;
+
+    // 2. Verificar se a Helo recebeu um link especial
     const params = new URLSearchParams(window.location.search);
     const sharedUrl = params.get('vurl');
+    
     if (sharedUrl) {
       const sharedVideo: Video = {
         id: 'shared-' + Date.now(),
-        title: decodeURIComponent(params.get('title') || 'Vídeo Especial para Você'),
+        title: decodeURIComponent(params.get('title') || 'VLOG COM SAUDADE DO MOR #01'),
         thumbnail: 'https://images.unsplash.com/photo-1518197146369-0115994ca759?q=80&w=1000&auto=format&fit=crop',
         channelName: 'Nicolas & Helo',
         channelAvatar: MICKEY_AVATAR,
         views: '1 visualização',
-        postedAt: 'exclusivo',
-        duration: 'ETERNO',
+        postedAt: 'exclusivo para você',
+        duration: 'NOVO',
         videoUrl: decodeURIComponent(sharedUrl),
-        description: '❤️ Este vídeo foi feito com muito carinho e postado no HeloTube para você ver sempre que sentir saudades.',
+        description: '❤️ Oi Helo! Este vídeo foi feito com muito carinho e postado no HeloTube só para você. Clique para assistir!',
         isVertical: params.get('vert') === 'true'
       };
-      setSelectedVideo(sharedVideo);
+      
+      // Coloca o vídeo compartilhado no topo da lista
+      setVideos([sharedVideo, ...baseVideos.filter((v: Video) => v.id !== 'demo-1')]);
+      
+      // Remove os parâmetros da URL para ficar limpo, mas NÃO abre o player automático
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      setVideos(baseVideos);
     }
   }, []);
+
+  useEffect(() => {
+    if (videos.length > 0 && videos[0].id !== 'demo-1' && !videos[0].id.startsWith('shared-')) {
+      localStorage.setItem('helotube_videos', JSON.stringify(videos));
+    }
+  }, [videos]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -95,18 +114,17 @@ const App: React.FC = () => {
         channelAvatar: MICKEY_AVATAR,
         views: '1 visualização',
         postedAt: 'agora mesmo',
-        duration: isCloudinaryConfigured ? '☁️ NUVEM' : '📁 LOCAL',
+        duration: '☁️ NUVEM',
         videoUrl: finalUrl,
-        description: isCloudinaryConfigured 
-          ? '✅ SUCESSO! Este vídeo está na nuvem. Clique em COPIAR LINK para ela ver no celular dela.' 
-          : '⚠️ AVISO: Este vídeo é local. Para ele ser eterno, configure o Cloudinary.',
+        description: '✅ Este vídeo foi postado no HeloTube com sucesso!',
         isVertical: isVertical
       };
 
-      setVideos([newVideo, ...videos]);
+      setVideos([newVideo, ...videos.filter(v => v.id !== 'demo-1')]);
       setUploadProgress(null);
       setIsUploadModalOpen(false);
       setLastUploadedVideo(newVideo);
+      // Aqui o Nicolas vê o vídeo abrir na hora pra conferir
       setSelectedVideo(newVideo);
     } catch (error: any) {
       alert(`ERRO NO UPLOAD: ${error.message}`);
@@ -120,9 +138,15 @@ const App: React.FC = () => {
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(shareUrl);
-      alert("✅ LINK COPIADO! Agora mande no WhatsApp da Helo!");
+      alert("✅ LINK COPIADO! Mande no WhatsApp da Helo. Ela vai ver o vídeo na Home e clicar para assistir!");
     } else {
-      alert("Link para copiar:\n\n" + shareUrl);
+      const tempInput = document.createElement("input");
+      tempInput.value = shareUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+      alert("✅ LINK COPIADO! Mande para a Helo!");
     }
     setLastUploadedVideo(null);
   };
@@ -149,23 +173,8 @@ const App: React.FC = () => {
           />
         ) : (
           <div className="p-4 md:p-6 max-w-[2200px] mx-auto">
-            {/* NOVO BANNER DE BOAS-VINDAS PARA FACILITAR O UPLOAD */}
-            <div className="mb-10 p-8 rounded-3xl bg-gradient-to-r from-red-900/40 to-pink-900/40 border border-white/10 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative group">
-              <div className="absolute -right-10 -top-10 w-40 h-40 bg-pink-500/10 rounded-full blur-3xl group-hover:bg-pink-500/20 transition-all"></div>
-              <div className="z-10 text-center md:text-left">
-                <h1 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Olá Nicolas! ❤️</h1>
-                <p className="text-zinc-400 text-sm max-w-md">Pronto para surpreender a Helo? Clique no botão ao lado para subir o seu vídeo vertical agora mesmo.</p>
-              </div>
-              <button 
-                onClick={() => setIsUploadModalOpen(true)}
-                className="z-10 bg-white text-black px-8 py-4 rounded-full font-black text-sm tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 flex items-center gap-2 whitespace-nowrap"
-              >
-                <svg className="w-5 h-5 fill-black" viewBox="0 0 24 24"><path d="M14 13h-3v3H9v-3H6v-2h3V8h2v3h3v2zm3-7H3v12h14V6zM2 5h16v14H2V5zm18 3h2v10h-2V8z"/></svg>
-                FAZER UPLOAD PARA A HELO
-              </button>
-            </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-6 no-scrollbar">
+            {/* Categorias discretas */}
+            <div className="flex gap-3 overflow-x-auto pb-6 no-scrollbar sticky top-14 bg-[#0f0f0f] z-30 pt-2">
                {CATEGORIES.map(cat => (
                  <button 
                    key={cat}
@@ -181,73 +190,72 @@ const App: React.FC = () => {
                ))}
             </div>
 
-            <div className={`grid gap-x-4 gap-y-10 ${sidebarSection === 'shorts' ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+            {/* Grid de Vídeos - Onde ela vai clicar! */}
+            <div className={`grid gap-x-4 gap-y-10 mt-4 ${sidebarSection === 'shorts' ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
               {videos
                 .filter(v => sidebarSection === 'shorts' ? v.isVertical : true)
                 .map((video) => (
                   <VideoCard key={video.id} video={video} onClick={() => setSelectedVideo(video)} />
               ))}
             </div>
+            
+            {videos.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
+                <p className="text-lg">Tudo pronto! Use o botão Upload para começar.</p>
+              </div>
+            )}
           </div>
         )}
       </main>
 
-      {/* MODAL DE SUCESSO PÓS-UPLOAD */}
+      {/* AVISO DE SUCESSO DO NICOLAS */}
       {lastUploadedVideo && (
-        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#1e1e1e] p-8 rounded-3xl border border-pink-500/30 text-center max-w-sm shadow-[0_0_50px_-12px_rgba(236,72,153,0.5)]">
-            <div className="text-5xl mb-4">✨</div>
-            <h2 className="text-xl font-black mb-2 uppercase italic">VÍDEO NO AR!</h2>
-            <p className="text-zinc-400 text-sm mb-6">Seu vídeo foi postado. Agora é só pegar o link e mandar para ela!</p>
+        <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
+          <div className="bg-[#1e1e1e] p-10 rounded-[3rem] border border-pink-500/30 text-center max-w-md shadow-[0_0_80px_-20px_rgba(236,72,153,0.4)]">
+            <div className="text-7xl mb-6">🤩</div>
+            <h2 className="text-2xl font-black mb-3 uppercase italic tracking-tighter">VÍDEO PRONTO!</h2>
+            <p className="text-zinc-400 mb-8 px-4 leading-relaxed">Agora copie o link abaixo. Quando a Helo abrir, o vídeo vai aparecer na tela inicial para ela clicar!</p>
             <button 
               onClick={() => copyHeloLink(lastUploadedVideo)}
-              className="w-full bg-gradient-to-r from-pink-600 to-red-600 py-4 rounded-full font-black text-sm tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-pink-600/20"
+              className="w-full bg-gradient-to-r from-pink-600 to-red-600 py-5 rounded-full font-black text-sm tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-pink-600/30 mb-4"
             >
-              COPIAR LINK PARA A HELO
+              COPIAR LINK ESPECIAL
             </button>
+            <button onClick={() => setLastUploadedVideo(null)} className="text-zinc-500 text-xs font-bold hover:text-white transition-colors">Fechar aviso</button>
           </div>
         </div>
       )}
 
+      {/* MODAL DE UPLOAD */}
       {isUploadModalOpen && (
-        <div className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#181818] w-full max-w-xl rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+        <div className="fixed inset-0 bg-black/95 z-[70] flex items-center justify-center p-4 backdrop-blur-xl animate-fade-in">
+          <div className="bg-[#181818] w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl border border-white/5">
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#212121]">
-              <h2 className="text-xl font-black italic tracking-tighter uppercase">POSTAR NO HELOTUBE</h2>
-              <button onClick={() => !uploadProgress && setIsUploadModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors">
+              <h2 className="text-xl font-black italic tracking-tighter uppercase">UPLOAD HELOTUBE</h2>
+              <button onClick={() => !uploadProgress && setIsUploadModalOpen(false)} className="text-zinc-500 hover:text-white transition-colors p-2">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             <div className="p-8">
-              <div className={`mb-6 p-4 rounded-xl border flex items-center justify-between ${isCloudinaryConfigured ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full animate-pulse ${isCloudinaryConfigured ? 'bg-green-500' : 'bg-red-500'}`} />
-                  <div>
-                    <p className={`text-[10px] font-black uppercase tracking-widest ${isCloudinaryConfigured ? 'text-green-500' : 'text-red-500'}`}>
-                      {isCloudinaryConfigured ? 'Nuvem Conectada' : 'Modo Temporário'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center gap-6 bg-[#0f0f0f] border-zinc-800">
+              <div className="border-2 border-dashed border-zinc-800 rounded-3xl p-16 flex flex-col items-center justify-center gap-8 bg-[#0f0f0f]">
                 {uploadProgress !== null ? (
                   <div className="w-full text-center">
-                    <p className="text-sm font-black mb-4 uppercase tracking-[0.2em] animate-pulse text-pink-500">
+                    <p className="text-base font-black mb-6 uppercase tracking-[0.2em] animate-pulse text-pink-500">
                       SUBINDO... {uploadProgress}%
                     </p>
-                    <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden">
-                      <div className="h-full bg-pink-600" style={{ width: `${uploadProgress}%` }} />
+                    <div className="w-full bg-zinc-900 h-3 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-pink-600 to-red-600" style={{ width: `${uploadProgress}%` }} />
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className="text-center space-y-2">
-                      <p className="font-black text-lg tracking-tight uppercase">Vídeo do Mor</p>
+                      <p className="font-black text-xl tracking-tight uppercase">Escolha o vídeo</p>
+                      <p className="text-zinc-500 text-sm">O vídeo que você gravou em pé.</p>
                     </div>
-                    <label className="font-black py-4 px-10 rounded-full cursor-pointer bg-white text-black hover:bg-zinc-200">
-                      ESCOLHER VÍDEO
+                    <label className="font-black py-5 px-12 rounded-full cursor-pointer bg-white text-black hover:bg-zinc-200 transition-all active:scale-95 shadow-lg shadow-white/10 text-sm tracking-widest">
+                      SELECIONAR
                       <input type="file" className="hidden" accept="video/*" onChange={handleFileUpload} />
                     </label>
                   </>
