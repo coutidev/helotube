@@ -11,6 +11,7 @@ export interface Video {
   videoUrl?: string;
   description: string;
   isVertical?: boolean;
+  isYouTube?: boolean;
 }
 
 export interface Comment {
